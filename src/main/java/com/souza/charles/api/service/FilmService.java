@@ -1,26 +1,33 @@
 package com.souza.charles.api.service;
 
 import com.souza.charles.api.model.Film;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.souza.charles.api.repository.FilmRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import jakarta.annotation.PostConstruct;
 import java.util.*;
 
 @Service
 public class FilmService {
 
-    @Autowired
-    private WebClient webClient;
+    private final WebClient webClient;
+    private final FilmRepository filmRepository;
 
-    private Film[] filmArray;
-
-    public FilmService(WebClient webClient) {
+    public FilmService(WebClient webClient, FilmRepository filmRepository) {
         this.webClient = webClient;
-        this.filmArray = fetchFilms();
+        this.filmRepository = filmRepository;
     }
 
-    private Film[] fetchFilms() {
+    @PostConstruct
+    public void init() {
+        if (filmRepository.count() == 0) {
+            Film[] films = fetchFilmsFromApi();
+            filmRepository.saveAll(Arrays.asList(films));
+        }
+    }
+
+    private Film[] fetchFilmsFromApi() {
         return webClient.get()
                 .uri("/films")
                 .retrieve()
@@ -28,53 +35,28 @@ public class FilmService {
                 .block();
     }
 
-    public Object[] findAllFilmsComplete() {
-        return webClient.get()
-                .uri("/films")
-                .retrieve()
-                .bodyToMono(Object[].class)
-                .block();
-    }
-
-    public Film[] findAllFilms() {
-        return filmArray;
+    public List<Film> findAllFilms() {
+        return filmRepository.findAll();
     }
 
     public List<Film> findFilmsByTitle(String title) {
-        List<Film> filmList = new ArrayList<>();
-        for (Film film : filmArray) {
-            String englishTitle = film.getTitle().toLowerCase();
-            String romajiTitle = film.getOriginal_title_romanised().toLowerCase();
-            if (englishTitle.contains(title.toLowerCase()) || romajiTitle.contains(title.toLowerCase())) {
-                filmList.add(film);
-            }
-        }
-        return filmList;
+        return filmRepository.findByTitleContainingIgnoreCase(title);
     }
 
-    public Map<Integer, String> findDirectors() {
-        Map<Integer, String> map = new HashMap<>();
-        List<Film> filmList = Arrays.asList(filmArray);
-        int mapKey = 1;
-        for (Film film : filmList) {
-            String director = film.getDirector();
-            if (!map.containsValue(director)) {
-                map.put(mapKey, director);
-                mapKey++;
-            }
-        }
-        return map;
+    public List<Film> findFilmsByDirector(String director) {
+        return filmRepository.findByDirectorContainingIgnoreCase(director);
     }
 
     public List<Film> findFilmsByNewest() {
-        List<Film> filmList = Arrays.asList(filmArray);
-        orderFilmsByReleaseDate(filmList);
-        return filmList;
+        return filmRepository.findAllByOrderByReleaseDateDesc();
     }
 
-    private List<Film> orderFilmsByReleaseDate(List<Film> list) {
-        list.sort(Comparator.comparing(Film::getRelease_date));
-        Collections.reverse(list);
-        return list;
+    public Set<String> findDirectors() {
+        List<Film> films = filmRepository.findAll();
+        Set<String> directors = new HashSet<>();
+        for (Film film : films) {
+            directors.add(film.getDirector());
+        }
+        return directors;
     }
 }

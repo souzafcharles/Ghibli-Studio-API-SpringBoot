@@ -2,29 +2,23 @@ package com.souza.charles.api.controller;
 
 import com.souza.charles.api.model.Film;
 import com.souza.charles.api.service.FilmService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 @RestController
-@RequestMapping("/")
+@RequestMapping("/films")
 public class FilmController {
 
-    @Autowired
-    private FilmService filmService;
+    private final FilmService filmService;
 
-    @GetMapping("/complete")
-    public Object[] getAllFilmsComplete() {
-        return filmService.findAllFilmsComplete();
+    public FilmController(FilmService filmService) {
+        this.filmService = filmService;
     }
 
     @GetMapping
-    public Film[] getAllFilms() {
+    public List<Film> getAllFilms() {
         return filmService.findAllFilms();
     }
 
@@ -34,7 +28,7 @@ public class FilmController {
     }
 
     @GetMapping("/directors")
-    public Map<Integer, String> getDirectors() {
+    public Set<String> getDirectors() {
         return filmService.findDirectors();
     }
 
