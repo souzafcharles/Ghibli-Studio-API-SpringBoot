@@ -3,7 +3,7 @@ package com.souza.charles.api.service;
 import com.souza.charles.api.model.Film;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.*;
 
@@ -11,12 +11,29 @@ import java.util.*;
 public class FilmService {
 
     @Autowired
-    private RestTemplate template = new RestTemplate();
+    private WebClient webClient;
 
-    Film[] filmArray = template.getForObject("https://ghibliapi.vercel.app/films/", Film[].class);
+    private Film[] filmArray;
+
+    public FilmService(WebClient webClient) {
+        this.webClient = webClient;
+        this.filmArray = fetchFilms();
+    }
+
+    private Film[] fetchFilms() {
+        return webClient.get()
+                .uri("/films")
+                .retrieve()
+                .bodyToMono(Film[].class)
+                .block();
+    }
 
     public Object[] findAllFilmsComplete() {
-        return template.getForObject("https://ghibliapi.vercel.app/films/", Object[].class);
+        return webClient.get()
+                .uri("/films")
+                .retrieve()
+                .bodyToMono(Object[].class)
+                .block();
     }
 
     public Film[] findAllFilms() {
@@ -25,8 +42,7 @@ public class FilmService {
 
     public List<Film> findFilmsByTitle(String title) {
         List<Film> filmList = new ArrayList<>();
-        for (int i = 0; i < filmArray.length; i++) {
-            Film film = filmArray[i];
+        for (Film film : filmArray) {
             String englishTitle = film.getTitle().toLowerCase();
             String romajiTitle = film.getOriginal_title_romanised().toLowerCase();
             if (englishTitle.contains(title.toLowerCase()) || romajiTitle.contains(title.toLowerCase())) {
@@ -57,7 +73,7 @@ public class FilmService {
     }
 
     private List<Film> orderFilmsByReleaseDate(List<Film> list) {
-        list.sort(Comparator.comparing(film -> film.getRelease_date()));
+        list.sort(Comparator.comparing(Film::getRelease_date));
         Collections.reverse(list);
         return list;
     }
