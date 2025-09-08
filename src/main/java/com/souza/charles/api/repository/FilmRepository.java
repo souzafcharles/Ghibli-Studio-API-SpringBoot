@@ -1,6 +1,6 @@
 package com.souza.charles.api.repository;
 
-import com.souza.charles.api.model.Film;
+import com.souza.charles.api.model.entity.Film;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,4 +14,6 @@ public interface FilmRepository extends JpaRepository<Film, String> {
     List<Film> findByDirectorContainingIgnoreCase(String director);
 
     List<Film> findAllByOrderByReleaseDateDesc();
+
+    List<Film> findByReleaseDateBetween(String startYear, String endYear);
 }
